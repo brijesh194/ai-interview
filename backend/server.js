@@ -13,6 +13,11 @@ app.use(express.json());
 
 const upload = multer({ dest: 'uploads/' });
 
+// ✅ ROOT ROUTE (FIX for "Cannot GET /")
+app.get("/", (req, res) => {
+    res.send("AI Interview Backend is running 🚀");
+});
+
 // --- 1. Start Interview Route ---
 app.post('/api/start-interview', upload.single('resume'), async (req, res) => {
     try {
@@ -54,7 +59,7 @@ app.post('/api/start-interview', upload.single('resume'), async (req, res) => {
     }
 });
 
-// --- 2. Next Question Route (FIXED FOR CODING EDITOR) ---
+// --- 2. Next Question Route ---
 app.post('/api/next-question', async (req, res) => {
     try {
         const { currentQuestion, userAnswer, history, jd, difficulty, language, timeTaken } = req.body;
@@ -73,19 +78,22 @@ app.post('/api/next-question', async (req, res) => {
             TASK:
             1. Evaluate the user's answer.
             2. Ask the next logical technical question.
-            3. CRITICAL: Set "isCodingRound" to true ONLY if the next question requires the user to write code, logic, or a function. For theory/verbal questions, set it to false.
-            
+            3. Set "isCodingRound" true ONLY if coding required.
+
             Return ONLY JSON: {"nextQuestion": "string", "isCodingRound": boolean}
         `;
 
         const response = await generateQuestions(dynamicPrompt, null, "DYNAMIC_MODE");
         res.status(200).json(response);
     } catch (error) {
-        res.status(200).json({ nextQuestion: "Agla sawal: Aapne technical challenges kaise handle kiye?", isCodingRound: false });
+        res.status(200).json({ 
+            nextQuestion: "Agla sawal: Aapne technical challenges kaise handle kiye?", 
+            isCodingRound: false 
+        });
     }
 });
 
-// --- 3. Interview Analysis Route (FIXED FOR ACCURATE RIGHT ANSWERS) ---
+// --- 3. Interview Analysis Route ---
 app.post('/api/analyze-interview', async (req, res) => {
     try {
         const { history, jd, difficulty, emotionSummary } = req.body;
@@ -97,30 +105,7 @@ app.post('/api/analyze-interview', async (req, res) => {
             Interview Data: ${JSON.stringify(history)}
             Emotions Summary: ${JSON.stringify(emotionSummary)}
 
-            STRICT INSTRUCTIONS FOR DETAILED HISTORY:
-            1. Evaluate each answer in the history.
-            2. "isCorrect" should be true if the answer is 70% technically accurate.
-            3. "correctAnswer" MUST be a highly professional, technically detailed, and accurate model answer for THAT SPECIFIC question. 
-            4. If the user said "don't know" or gave a wrong answer, the "correctAnswer" should act as a learning resource.
-
-            Return ONLY valid JSON (No markdown):
-            {
-                "overallScore": "X/10",
-                "technicalSkills": "string feedback",
-                "communication": "string feedback",
-                "timeManagement": "string feedback",
-                "strengths": ["point1", "point2"],
-                "improvements": ["point1", "point2"],
-                "finalVerdict": "Selected/Rejected",
-                "detailedHistory": [
-                    {
-                        "q": "exact question text",
-                        "a": "exact user answer",
-                        "isCorrect": boolean,
-                        "correctAnswer": "The perfect technical answer for this specific question"
-                    }
-                ]
-            }
+            Return ONLY valid JSON.
         `;
 
         const analysis = await generateQuestions(analysisPrompt, null, "ANALYSIS_MODE"); 
@@ -134,5 +119,7 @@ app.post('/api/analyze-interview', async (req, res) => {
     }
 });
 
-const PORT = 5000;
+// ✅ IMPORTANT: Dynamic PORT (Render fix)
+const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => console.log(`🚀 Server is flying on port ${PORT}`));
